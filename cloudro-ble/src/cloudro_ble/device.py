@@ -36,6 +36,8 @@ class CloudROState:
     measured: MeasuredData
     firmware: str | None = None
     mag_install_date: int | None = None
+    # Raw MEASURED_DATA bytes, kept for diagnostics / protocol debugging.
+    measured_raw: bytes = b""
 
 
 class CloudRODevice:
@@ -43,6 +45,7 @@ class CloudRODevice:
 
     def __init__(self, ble_device: BLEDevice) -> None:
         self._ble_device = ble_device
+        self._last_firmware: str | None = None
 
     def set_ble_device(self, ble_device: BLEDevice) -> None:
         """Update the BLEDevice (its address/handle can change between advertisements)."""
@@ -61,7 +64,9 @@ class CloudRODevice:
             try:
                 return await self._read_state(client)
             except BleakCharacteristicNotFoundError as err:
-                _LOGGER.debug(
+                # Rare and self-healing, but logged at WARNING (not DEBUG) so the
+                # recovery is visible in normal logs without enabling debug.
+                _LOGGER.warning(
                     "Cloud RO %s: %s; clearing GATT cache and reconnecting",
                     self._ble_device.address,
                     err,
@@ -83,15 +88,34 @@ class CloudRODevice:
     async def _read_state(self, client: BleakClientWithServiceCache) -> CloudROState:
         measured_raw = bytes(await client.read_gatt_char(char_uuid(MEASURED_DATA)))
         firmware = await self._read_str(client, VERSION)
-        # Logged to help diagnose units with different firmware; see Compatibility
-        # in the README.
+        # Logged at DEBUG every poll; the firmware also surfaces once at INFO below.
         _LOGGER.debug(
             "Cloud RO %s firmware=%s MEASURED_DATA raw: %s",
             self._ble_device.address,
             firmware,
             measured_raw.hex(),
         )
-        measured = parse_measured_data(measured_raw)
+        # Firmware is the key compatibility datum (see Compatibility in the README),
+        # so log it once at INFO on first connect and whenever it changes — without
+        # spamming a line every poll.
+        if firmware != self._last_firmware:
+            _LOGGER.info(
+                "Cloud RO %s firmware is %s", self._ble_device.address, firmware
+            )
+            self._last_firmware = firmware
+
+        try:
+            measured = parse_measured_data(measured_raw)
+        except ValueError as err:
+            # Capture the raw frame at WARNING so a layout change (e.g. new firmware)
+            # is diagnosable from a normal log, without needing debug enabled first.
+            _LOGGER.warning(
+                "Cloud RO %s: could not parse MEASURED_DATA (%s); raw: %s",
+                self._ble_device.address,
+                err,
+                measured_raw.hex(),
+            )
+            raise
 
         mag_install = await self._read_u32(client, MAG_INSTALL_DATE)
 
@@ -101,6 +125,7 @@ class CloudRODevice:
             measured=measured,
             firmware=firmware,
             mag_install_date=mag_install,
+            measured_raw=measured_raw,
         )
 
     @staticmethod
