@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
+from bleak import BleakError
 from bleak.backends.device import BLEDevice
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
@@ -48,36 +49,61 @@ class CloudRODevice:
         self._ble_device = ble_device
 
     async def update(self) -> CloudROState:
-        """Connect, read the current state, and disconnect."""
-        client = await establish_connection(
+        """Connect, read the current state, and disconnect.
+
+        A device reboot or firmware update can leave Home Assistant with a stale
+        cached GATT table whose characteristics no longer match the unit, so a read
+        fails with "characteristic ... was not found" on every retry. When that
+        happens we drop the cache and reconnect once to force a fresh discovery.
+        """
+        client = await self._connect()
+        try:
+            try:
+                return await self._read_state(client)
+            except BleakError as err:
+                if not _is_char_not_found(err):
+                    raise
+                _LOGGER.debug(
+                    "Cloud RO %s: %s; clearing GATT cache and reconnecting",
+                    self._ble_device.address,
+                    err,
+                )
+                await client.clear_cache()
+                await client.disconnect()
+                client = await self._connect()
+                return await self._read_state(client)
+        finally:
+            await client.disconnect()
+
+    async def _connect(self) -> BleakClientWithServiceCache:
+        return await establish_connection(
             BleakClientWithServiceCache,
             self._ble_device,
             self._ble_device.address,
         )
-        try:
-            measured_raw = bytes(await client.read_gatt_char(char_uuid(MEASURED_DATA)))
-            firmware = await self._read_str(client, VERSION)
-            # Logged to help diagnose units with different firmware; see Compatibility
-            # in the README.
-            _LOGGER.debug(
-                "Cloud RO %s firmware=%s MEASURED_DATA raw: %s",
-                self._ble_device.address,
-                firmware,
-                measured_raw.hex(),
-            )
-            measured = parse_measured_data(measured_raw)
 
-            mag_install = await self._read_u32(client, MAG_INSTALL_DATE)
+    async def _read_state(self, client: BleakClientWithServiceCache) -> CloudROState:
+        measured_raw = bytes(await client.read_gatt_char(char_uuid(MEASURED_DATA)))
+        firmware = await self._read_str(client, VERSION)
+        # Logged to help diagnose units with different firmware; see Compatibility
+        # in the README.
+        _LOGGER.debug(
+            "Cloud RO %s firmware=%s MEASURED_DATA raw: %s",
+            self._ble_device.address,
+            firmware,
+            measured_raw.hex(),
+        )
+        measured = parse_measured_data(measured_raw)
 
-            return CloudROState(
-                address=self._ble_device.address,
-                name=self._ble_device.name,
-                measured=measured,
-                firmware=firmware,
-                mag_install_date=mag_install,
-            )
-        finally:
-            await client.disconnect()
+        mag_install = await self._read_u32(client, MAG_INSTALL_DATE)
+
+        return CloudROState(
+            address=self._ble_device.address,
+            name=self._ble_device.name,
+            measured=measured,
+            firmware=firmware,
+            mag_install_date=mag_install,
+        )
 
     @staticmethod
     async def _read_str(client: BleakClientWithServiceCache, code: int) -> str | None:
@@ -96,6 +122,11 @@ class CloudRODevice:
         except Exception as err:  # noqa: BLE001 - best-effort optional read
             _LOGGER.debug("Could not read 0x%04x: %s", code, err)
             return None
+
+
+def _is_char_not_found(err: BleakError) -> bool:
+    """True if a BleakError reports a missing characteristic (stale GATT cache)."""
+    return "was not found" in str(err)
 
 
 def is_cloud_ro(service_uuids: list[str]) -> bool:
