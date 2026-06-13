@@ -1,8 +1,7 @@
 """Constants for the Cloud RO BLE protocol.
 
-Reverse-engineered from the Cloud Water Filters app (com.cloudwaterfilters v1.6.0)
-and verified live. See ../../PROTOCOL.md for the full spec. The device exposes its
-data over a custom GATT service with no authentication or pairing.
+The device exposes its data over a custom GATT service with no authentication or
+pairing. See PROTOCOL.md for the full specification.
 """
 
 from __future__ import annotations

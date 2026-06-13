@@ -8,10 +8,11 @@ __pycache__/
 .venv/
 .ha-venv/
 
-# Dev artifacts (reverse-engineering inputs/outputs, not for distribution)
+# Local scratch (not for distribution)
 apk/
 captures/
 dev-config/
+tools/
 
 # macOS
 .DS_Store

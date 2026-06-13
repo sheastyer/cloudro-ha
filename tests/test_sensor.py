@@ -14,7 +14,7 @@ from custom_components.cloudro.const import DOMAIN
 
 ADDRESS = "AA:BB:CC:DD:EE:FF"
 
-# Real MEASURED_DATA frame captured from device AJ551-CLOUDRO.
+# Sample MEASURED_DATA frame.
 FIXTURE = bytes.fromhex(
     (
         "78 00 03 00 12 00 f3 00 20 da 00 00 64 00 87 12 2d 00 30 00"
@@ -26,16 +26,16 @@ FIXTURE = bytes.fromhex(
 def _state() -> CloudROState:
     return CloudROState(
         address=ADDRESS,
-        name="AJ551-CLOUDRO",
+        name="Cloud RO",
         measured=parse_measured_data(FIXTURE),
         firmware="V1.05",
-        mag_install_date=808990513,
+        mag_install_date=None,
     )
 
 
 async def _setup(hass: HomeAssistant) -> MockConfigEntry:
     hass.config.units = US_CUSTOMARY_SYSTEM  # show dispensed water in gallons
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=ADDRESS, title="AJ551-CLOUDRO")
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=ADDRESS, title="Cloud RO")
     entry.add_to_hass(hass)
 
     fake_device = AsyncMock()

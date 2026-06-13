@@ -14,7 +14,7 @@ from custom_components.cloudro.const import DOMAIN
 ADDRESS = "AA:BB:CC:DD:EE:FF"
 
 
-def _service_info(name: str = "AJ551-CLOUDRO") -> SimpleNamespace:
+def _service_info(name: str = "Cloud RO") -> SimpleNamespace:
     """A stand-in for BluetoothServiceInfoBleak (flow only uses these attrs)."""
     return SimpleNamespace(
         address=ADDRESS, name=name, service_uuids=[CLOUD_SERVICE_UUID]
@@ -31,7 +31,7 @@ async def test_bluetooth_discovery_flow(hass: HomeAssistant) -> None:
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "AJ551-CLOUDRO"
+    assert result["title"] == "Cloud RO"
     assert result["result"].unique_id == ADDRESS
 
 

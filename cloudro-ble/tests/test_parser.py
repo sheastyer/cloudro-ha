@@ -1,4 +1,4 @@
-"""Tests for the Cloud RO payload decoders, using payloads captured from a real unit."""
+"""Tests for the Cloud RO payload decoders, using sample device payloads."""
 
 from __future__ import annotations
 
@@ -10,13 +10,13 @@ from cloudro_ble import (
     parse_measured_data,
 )
 
-# Real MEASURED_DATA frame captured live from device AJ551-CL on 2026-06-13.
+# Sample MEASURED_DATA frame.
 MEASURED_FIXTURE = bytes.fromhex(
     "78 00 03 00 12 00 f3 00 20 da 00 00 64 00 87 12 2d 00 30 00"
     "f8 00 2f 00 f6 00 00 00 01 00 bd 7d 2d 6a".replace(" ", "")
 )
 
-# Real CONSUMED_WATER read (leading monthly histogram + overflow, with trailing records).
+# Sample CONSUMED_WATER read (leading monthly histogram + overflow).
 CONSUMED_FIXTURE = bytes.fromhex(
     "fa 13 f4 13 68 16 be 15 55 1a ce 08 89 05 fb 12 11 12 d8 10"
     "dd 12 9d 14 02 00 00 00".replace(" ", "")
