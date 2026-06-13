@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from bleak import BleakError
+from bleak.exc import BleakCharacteristicNotFoundError
 
 from custom_components.cloudro.cloudro_ble.const import MEASURED_DATA, char_uuid
 from custom_components.cloudro.cloudro_ble.device import CloudRODevice
@@ -41,7 +42,7 @@ def _ok_client() -> AsyncMock:
 def _stale_client() -> AsyncMock:
     """A client whose cached GATT table is missing MEASURED_DATA."""
     client = AsyncMock()
-    not_found = BleakError(f"Characteristic {char_uuid(MEASURED_DATA)} was not found!")
+    not_found = BleakCharacteristicNotFoundError(char_uuid(MEASURED_DATA))
     client.read_gatt_char = AsyncMock(side_effect=not_found)
     client.clear_cache = AsyncMock(return_value=True)
     return client

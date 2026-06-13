@@ -11,8 +11,8 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from bleak import BleakError
 from bleak.backends.device import BLEDevice
+from bleak.exc import BleakCharacteristicNotFoundError
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 
 from .const import (
@@ -60,9 +60,7 @@ class CloudRODevice:
         try:
             try:
                 return await self._read_state(client)
-            except BleakError as err:
-                if not _is_char_not_found(err):
-                    raise
+            except BleakCharacteristicNotFoundError as err:
                 _LOGGER.debug(
                     "Cloud RO %s: %s; clearing GATT cache and reconnecting",
                     self._ble_device.address,
@@ -122,11 +120,6 @@ class CloudRODevice:
         except Exception as err:  # noqa: BLE001 - best-effort optional read
             _LOGGER.debug("Could not read 0x%04x: %s", code, err)
             return None
-
-
-def _is_char_not_found(err: BleakError) -> bool:
-    """True if a BleakError reports a missing characteristic (stale GATT cache)."""
-    return "was not found" in str(err)
 
 
 def is_cloud_ro(service_uuids: list[str]) -> bool:
