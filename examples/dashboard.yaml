@@ -1,0 +1,81 @@
+# Example Home Assistant dashboard for a Cloud RO unit.
+#
+# How to use:
+#   1. Settings -> Dashboards -> (a dashboard) -> top-right pencil -> three-dot menu
+#      -> "Raw configuration editor", and paste this as a new view; OR add a single
+#      card with "+ Add Card -> Manual" and paste one block below.
+#   2. Replace the entity prefix `cloud_ro` with your device's prefix. Find it under
+#      Settings -> Devices & Services -> your Cloud RO device (e.g. `aj551_cl`), so
+#      `sensor.cloud_ro_inlet_tds` becomes `sensor.aj551_cl_inlet_tds`.
+#
+# Uses only built-in cards — no custom (HACS frontend) cards required.
+
+title: Cloud RO
+views:
+  - title: Water
+    icon: mdi:water
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: tile
+            entity: sensor.cloud_ro_filter_battery_status
+            name: Filter & battery
+          - type: tile
+            entity: binary_sensor.cloud_ro_problem
+            name: Status
+          - type: tile
+            entity: sensor.cloud_ro_battery
+
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            entity: sensor.cloud_ro_inlet_tds
+            name: Inlet TDS
+            unit: ppm
+            min: 0
+            max: 500
+          - type: gauge
+            entity: sensor.cloud_ro_post_ro_tds
+            name: Post-RO TDS
+            unit: ppm
+            min: 0
+            max: 100
+          - type: gauge
+            entity: sensor.cloud_ro_remineralized_tds
+            name: Drinking TDS
+            unit: ppm
+            min: 0
+            max: 150
+            needle: true
+            severity:
+              green: 0
+              yellow: 60
+              red: 120
+
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            entity: sensor.cloud_ro_tank_fill
+            name: Tank fill
+            unit: "%"
+            min: 0
+            max: 100
+            needle: true
+            severity:
+              red: 0
+              yellow: 20
+              green: 50
+          - type: tile
+            entity: sensor.cloud_ro_total_dispensed_water
+            name: Total dispensed
+          - type: tile
+            entity: binary_sensor.cloud_ro_water_flow
+            name: Water flow
+
+      - type: history-graph
+        title: TDS history
+        hours_to_show: 168
+        entities:
+          - entity: sensor.cloud_ro_inlet_tds
+          - entity: sensor.cloud_ro_post_ro_tds
+          - entity: sensor.cloud_ro_remineralized_tds

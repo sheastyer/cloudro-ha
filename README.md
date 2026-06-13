@@ -52,12 +52,21 @@ logger:
 
 The log will contain a line like `MEASURED_DATA raw: 7800...` — include it in the issue.
 
+## Example dashboard
+
+[`examples/dashboard.yaml`](examples/dashboard.yaml) is a copy-paste starter view —
+status tiles, TDS + tank-fill gauges, and a TDS history graph. It uses only built-in
+cards (no extra frontend installs). Open a dashboard's **raw configuration editor**,
+paste it, and replace the `cloud_ro` entity prefix with your device's prefix (shown
+on the device page under Settings → Devices & Services).
+
 ## Layout
 
 | Path | What |
 |---|---|
 | `custom_components/cloudro/` | The Home Assistant integration |
 | `cloudro-ble/` | Standalone BLE protocol library (no Home Assistant dependency) |
+| `examples/dashboard.yaml` | Starter Lovelace dashboard (built-in cards only) |
 | `PROTOCOL.md` | The BLE protocol specification |
 
 ## Develop
