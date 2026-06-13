@@ -1,0 +1,34 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "description": "Select a Cloud RO unit to set up.",
+        "data": {
+          "address": "Device"
+        }
+      },
+      "bluetooth_confirm": {
+        "description": "Set up {name}?"
+      }
+    },
+    "abort": {
+      "no_devices_found": "No Cloud RO units found in Bluetooth range.",
+      "already_configured": "This Cloud RO unit is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "inlet_tds": { "name": "Inlet TDS" },
+      "post_ro_tds": { "name": "Post-RO TDS" },
+      "remin_tds": { "name": "Remineralized TDS" },
+      "tank_fill": { "name": "Tank fill" },
+      "total_dispensed": { "name": "Total dispensed water" },
+      "tank_pressure": { "name": "Tank pressure" },
+      "stored_water_raw": { "name": "Stored water (raw)" }
+    },
+    "binary_sensor": {
+      "flow": { "name": "Water flow" }
+    }
+  }
+}

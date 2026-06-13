@@ -1,0 +1,18 @@
+{
+  "domain": "cloudro",
+  "name": "Cloud RO Water",
+  "bluetooth": [
+    {
+      "service_uuid": "5e3c1400-0929-41b6-89ea-502be1edf8b0"
+    }
+  ],
+  "codeowners": ["@sheastyer"],
+  "config_flow": true,
+  "dependencies": ["bluetooth_adapters"],
+  "documentation": "https://github.com/sheastyer/cloudro-ha",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/sheastyer/cloudro-ha/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
