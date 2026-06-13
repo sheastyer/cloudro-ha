@@ -24,8 +24,17 @@
       "remin_tds": { "name": "Remineralized TDS" },
       "tank_fill": { "name": "Tank fill" },
       "total_dispensed": { "name": "Total dispensed water" },
+      "total_dispensed_raw": { "name": "Total dispensed water (raw)" },
       "tank_pressure": { "name": "Tank pressure" },
-      "stored_water_raw": { "name": "Stored water (raw)" }
+      "stored_water_raw": { "name": "Stored water (raw)" },
+      "replacement_status": {
+        "name": "Filter & battery status",
+        "state": {
+          "ok": "Good",
+          "replace_soon": "Replace soon",
+          "replace": "Replace now"
+        }
+      }
     },
     "binary_sensor": {
       "flow": { "name": "Water flow" }

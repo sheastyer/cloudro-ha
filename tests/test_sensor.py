@@ -2,11 +2,13 @@
 
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from custom_components.cloudro.cloudro_ble import CloudROState, parse_measured_data
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.util.unit_system import US_CUSTOMARY_SYSTEM
 
 from custom_components.cloudro.const import DOMAIN
 
@@ -32,6 +34,7 @@ def _state() -> CloudROState:
 
 
 async def _setup(hass: HomeAssistant) -> MockConfigEntry:
+    hass.config.units = US_CUSTOMARY_SYSTEM  # show dispensed water in gallons
     entry = MockConfigEntry(domain=DOMAIN, unique_id=ADDRESS, title="AJ551-CLOUDRO")
     entry.add_to_hass(hass)
 
@@ -65,8 +68,9 @@ async def test_entities_reflect_decoded_values(hass: HomeAssistant) -> None:
     assert state_of("sensor", "post_ro_tds") == "3"
     assert state_of("sensor", "remin_tds") == "18"
     assert float(state_of("sensor", "tank_fill")) == 98.0
-    assert state_of("sensor", "total_dispensed") == "55840"
+    assert float(state_of("sensor", "total_dispensed")) == pytest.approx(436.2, abs=0.1)
     assert state_of("sensor", "battery") == "100"
+    assert state_of("sensor", "replacement_status") == "ok"
     assert state_of("binary_sensor", "problem") == "off"
     assert state_of("binary_sensor", "flow") == "off"
 

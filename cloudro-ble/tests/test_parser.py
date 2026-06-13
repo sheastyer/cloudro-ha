@@ -46,7 +46,19 @@ def test_measured_data_derived_properties():
     m = parse_measured_data(MEASURED_FIXTURE)
     assert m.tank_fill_percent == pytest.approx(98.0, abs=0.1)
     assert m.battery_voltage == pytest.approx(4.743)
+    assert m.total_dispensed_gallons == pytest.approx(436.2, abs=0.1)  # 55840 / 128
+    assert m.replacement_status == "ok"  # 4743 mV >= 4000
     assert m.ok is True
+
+
+@pytest.mark.parametrize(
+    ("battery_mv", "expected"),
+    [(4743, "ok"), (4000, "ok"), (3999, "replace_soon"), (3900, "replace_soon"), (3899, "replace")],
+)
+def test_replacement_status_thresholds(battery_mv, expected):
+    m = parse_measured_data(MEASURED_FIXTURE)
+    m.battery_voltage_mv = battery_mv
+    assert m.replacement_status == expected
 
 
 def test_parse_measured_data_rejects_short_payload():

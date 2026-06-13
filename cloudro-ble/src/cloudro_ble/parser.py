@@ -52,6 +52,26 @@ class MeasuredData:
         return round(self.battery_voltage_mv / 1000, 3)
 
     @property
+    def total_dispensed_gallons(self) -> float:
+        """Lifetime dispensed water in US gallons (device counts fluid ounces)."""
+        return round(self.total_dispensed_water / 128, 1)
+
+    @property
+    def replacement_status(self) -> str:
+        """Filter/battery replacement state, as the app derives it from battery voltage.
+
+        The remineralizer cartridge and battery are swapped together, so the app maps
+        battery voltage to a filter/battery status: ok / replace_soon / replace.
+        (A cloud-side recommendation can also trigger replacement, but that is not
+        available locally.)
+        """
+        if self.battery_voltage_mv < 3900:
+            return "replace"
+        if self.battery_voltage_mv < 4000:
+            return "replace_soon"
+        return "ok"
+
+    @property
     def ok(self) -> bool:
         """True when the device reports no error."""
         return self.error_code == 0

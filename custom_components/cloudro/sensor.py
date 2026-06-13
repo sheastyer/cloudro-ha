@@ -17,6 +17,7 @@ from homeassistant.const import (
     PERCENTAGE,
     EntityCategory,
     UnitOfElectricPotential,
+    UnitOfVolume,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -31,7 +32,7 @@ PPM = "ppm"
 class CloudROSensorDescription(SensorEntityDescription):
     """Describes a Cloud RO sensor and how to read it from device state."""
 
-    value_fn: Callable[[CloudROState], float | int | None]
+    value_fn: Callable[[CloudROState], float | int | str | None]
 
 
 SENSORS: tuple[CloudROSensorDescription, ...] = (
@@ -67,8 +68,26 @@ SENSORS: tuple[CloudROSensorDescription, ...] = (
     CloudROSensorDescription(
         key="total_dispensed",
         translation_key="total_dispensed",
+        device_class=SensorDeviceClass.WATER,
+        native_unit_of_measurement=UnitOfVolume.GALLONS,
         state_class=SensorStateClass.TOTAL_INCREASING,
+        suggested_display_precision=0,
+        value_fn=lambda s: s.measured.total_dispensed_gallons,
+    ),
+    CloudROSensorDescription(
+        key="total_dispensed_raw",
+        translation_key="total_dispensed_raw",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         value_fn=lambda s: s.measured.total_dispensed_water,
+    ),
+    CloudROSensorDescription(
+        key="replacement_status",
+        translation_key="replacement_status",
+        device_class=SensorDeviceClass.ENUM,
+        options=["ok", "replace_soon", "replace"],
+        value_fn=lambda s: s.measured.replacement_status,
     ),
     CloudROSensorDescription(
         key="battery",
@@ -134,5 +153,5 @@ class CloudROSensor(CloudROEntity, SensorEntity):
         self._attr_unique_id = f"{coordinator.address}_{description.key}"
 
     @property
-    def native_value(self) -> float | int | None:
+    def native_value(self) -> float | int | str | None:
         return self.entity_description.value_fn(self.coordinator.data)

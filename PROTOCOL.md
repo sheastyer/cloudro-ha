@@ -121,12 +121,28 @@ Behavior:
 - CONSUMED_WATER read returns the 12-month histogram followed by appended recent
   per-day records (TS+TDS quadruplets); parse the leading 24–28 bytes for monthly totals.
 
-## Open calibration questions (compare against the app UI)
+## Calibration RESOLVED (from app screenshots + bundle UI logic)
 
-- Tank volume in **gallons**: what does the app show now vs StoredWater≈243/248? → raw→gal factor.
-- **Filter / remineralizer status**: how the app presents it, and whether it maps to
-  MAG_INSTALL_DATE (which read as 1995 = likely unset) or to dispensed-water thresholds.
-- TankPressure units (psi?).
+Decoded the app's dashboard logic (bundle module rendering "DRINKING WATER QUALITY"):
+
+- **Dispensed/consumed water is in FLUID OUNCES.** App divides by 128 to show US gallons
+  (`TotalDispensedWater 55840 / 128 = 436 gal`, matches the "~437" on the glass). The
+  monthly histogram values are also fl oz. → integration exposes gallons (device counts oz).
+- **Tank volume is shown as a PERCENTAGE**, not gallons:
+  `pct = clamp(round(StoredWater / MaxStoredWater * 100), 0, 100)`, displayed as `"Full"`
+  when `>= 97%`. Our `tank_fill_percent` matches (MaxStoredWater = MaxTankVolumeLife).
+- **"Filters Good / Battery Good" is derived locally from BatteryVoltage** (the cartridge
+  and battery are replaced together):
+  - `>= 4000 mV` → "Filters Good" / "Battery Good" (green)
+  - `3900–3999 mV` → "Change Filters Soon" / "Low Battery" (yellow)
+  - `< 3900 mV` → "Change Filters" / "Change Battery" (red)
+  Exposed as the `replacement_status` enum (ok / replace_soon / replace).
+  A cloud-side override also exists (`replacement_triggered` from the app's `/postback`
+  API) — NOT available locally, so we use the battery-voltage rule.
+- **Water-quality word** (`xe`) is `"excellent"` when working / `"processing"` while
+  measuring — the 5-level scale (Excellent/Great/Good/Average/Poor) only appears in FAQ
+  copy. The TDS sensors already convey quality, so no separate word entity is added.
+- **TankPressure** units still unconfirmed (exposed raw, diagnostic).
 
 ## Captures / sources
 
