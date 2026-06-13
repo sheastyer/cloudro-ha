@@ -55,10 +55,18 @@ class CloudRODevice:
             self._ble_device.address,
         )
         try:
-            measured_raw = await client.read_gatt_char(char_uuid(MEASURED_DATA))
-            measured = parse_measured_data(bytes(measured_raw))
-
+            measured_raw = bytes(await client.read_gatt_char(char_uuid(MEASURED_DATA)))
             firmware = await self._read_str(client, VERSION)
+            # Logged to help diagnose units with different firmware; see Compatibility
+            # in the README.
+            _LOGGER.debug(
+                "Cloud RO %s firmware=%s MEASURED_DATA raw: %s",
+                self._ble_device.address,
+                firmware,
+                measured_raw.hex(),
+            )
+            measured = parse_measured_data(measured_raw)
+
             mag_install = await self._read_u32(client, MAG_INSTALL_DATE)
 
             return CloudROState(
