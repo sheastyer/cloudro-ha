@@ -79,3 +79,9 @@ views:
           - entity: sensor.cloud_ro_inlet_tds
           - entity: sensor.cloud_ro_post_ro_tds
           - entity: sensor.cloud_ro_remineralized_tds
+
+      - type: history-graph
+        title: Tank fill (usage over time)
+        hours_to_show: 168
+        entities:
+          - entity: sensor.cloud_ro_tank_fill
