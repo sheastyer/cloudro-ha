@@ -6,6 +6,7 @@ table that no longer contains MEASURED_DATA, so every read fails with
 once to force a fresh discovery rather than failing forever.
 """
 
+import logging
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -48,18 +49,66 @@ def _stale_client() -> AsyncMock:
     return client
 
 
-async def test_update_clears_cache_and_retries_on_missing_characteristic() -> None:
+async def test_update_clears_cache_and_retries_on_missing_characteristic(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     stale, good = _stale_client(), _ok_client()
-    with patch(f"{MODULE}.establish_connection", side_effect=[stale, good]) as connect:
+    with (
+        caplog.at_level(logging.WARNING, logger=MODULE),
+        patch(f"{MODULE}.establish_connection", side_effect=[stale, good]) as connect,
+    ):
         state = await CloudRODevice(_fake_device()).update()
 
     # Recovered: parsed the frame read after the reconnect.
     assert state.measured.inlet_tds == 120
+    assert state.measured_raw == FIXTURE
     # Dropped the stale cache, reconnected a second time, and cleaned up both clients.
     stale.clear_cache.assert_awaited_once()
     assert connect.call_count == 2
     stale.disconnect.assert_awaited()
     good.disconnect.assert_awaited()
+    # The recovery is visible at WARNING without enabling debug.
+    assert any(
+        r.levelno == logging.WARNING and "clearing GATT cache" in r.message
+        for r in caplog.records
+    )
+
+
+async def test_update_warns_with_raw_frame_on_parse_failure(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # A too-short MEASURED_DATA frame makes parse_measured_data raise ValueError.
+    short = bytes.fromhex("deadbeef")
+    client = AsyncMock()
+    client.read_gatt_char = AsyncMock(return_value=bytearray(short))
+    with (
+        caplog.at_level(logging.WARNING, logger=MODULE),
+        patch(f"{MODULE}.establish_connection", side_effect=[client]),
+    ):
+        with pytest.raises(ValueError):
+            await CloudRODevice(_fake_device()).update()
+
+    # The raw bytes are captured at WARNING so a layout change is diagnosable
+    # without debug logging having been enabled beforehand.
+    assert any(
+        r.levelno == logging.WARNING and short.hex() in r.message
+        for r in caplog.records
+    )
+    client.disconnect.assert_awaited()
+
+
+async def test_firmware_logged_once_at_info(caplog: pytest.LogCaptureFixture) -> None:
+    device = CloudRODevice(_fake_device())
+    with (
+        caplog.at_level(logging.INFO, logger=MODULE),
+        patch(f"{MODULE}.establish_connection", return_value=_ok_client()),
+    ):
+        await device.update()
+        await device.update()  # same firmware on the second poll
+
+    firmware_lines = [r for r in caplog.records if "firmware is" in r.message]
+    assert len(firmware_lines) == 1
+    assert firmware_lines[0].levelno == logging.INFO
 
 
 async def test_update_does_not_retry_other_errors() -> None:
